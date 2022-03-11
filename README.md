@@ -9,7 +9,7 @@ You have a trained model `teacher_model` but want to experiment architectural ch
 
 **How is that different from model distillation?**
 
-In distillation you want to reduce a model size, in this case I'll be focussing in the case when you wanna increase it.
+In distillation you want to reduce a model size, in this case I'll be focussing on increasing it.
 
 ## Interface
 
