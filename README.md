@@ -1,4 +1,4 @@
-# Weight Transplanter
+# Transplanter
 
 **Story**: I have a "small" ANN (~100M params) working decently ok, but I wanna see if a larger ANN (~400M params) can significantly outperform it. However, training from sratch models of these sizes is extremely expensive, so I need a way of efficiently transferring knowledge from one to the other.
 Introducing **Transplanter**: a way of initializing the  weights such that new models can hit the ground running 🏃
