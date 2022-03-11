@@ -1,3 +1,0 @@
-[submodule "test_models/attentions"]
-	path = test_models/attentions
-	url = git@github.com:sooftware/attentions.git
