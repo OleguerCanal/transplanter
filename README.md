@@ -9,7 +9,7 @@ Introducing **Transplanter**: a way of initializing the weights such that new mo
 **How is that different from model distillation?**
 
 In distillation you want to reduce a model size, in this case I'll be focussing on increasing it.
-Nevertheless the idea is the same and I take a lot form it.
+Nevertheless the idea is the same and I use a lot of distillation ideas.
 
 ## Interface
 
