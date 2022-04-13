@@ -25,5 +25,6 @@ class Transplanter:
         self.student_blocks = self.block_extractor.get_blocks(student_model)
 
         log_model_blocks(self.teacher_blocks, self.student_blocks)
+
         
         pass
