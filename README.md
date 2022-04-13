@@ -29,4 +29,4 @@ transplanter.transplant(
 # here student_model should be performing almost as good as teacher_model
 ```
 
-**NOTE:** This is a very early-stage work-in-process work. I will prioritize it for what I need now, but try to make it general enough to be applied to other PyTorch projects.
+**NOTE:** This is a very early-stage work-in-process thing. I will prioritize it for what I need now, but try to make it general enough to be applied to other PyTorch projects.
