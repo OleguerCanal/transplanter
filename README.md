@@ -1,4 +1,4 @@
-# Transplanter
+# Transplanter 🪴
 
 **Story**:
 I have a "small" ANN (~100M params) working decently ok, but I wanna see if a larger ANN (~400M params) can significantly outperform it.
