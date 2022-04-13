@@ -4,10 +4,10 @@
 
 import torch
 
-class BlockManager(torch.nn.Module):
+class BlockModule(torch.nn.Module):
     
     def __init__(self, model):
-        super(BlockManager, self).__init__()
+        super(BlockModule, self).__init__()
         self.model = model
         self.grouped_params = self.get_grouped_params()
 
@@ -63,15 +63,15 @@ class BlockManager(torch.nn.Module):
 
 
     def forward(self,
-                inputs : tuple,
                 start_block : int = None,
-                end_block : int = None):
+                end_block : int = None,
+                **kwargs):
         """Forward model from start_block (inclusive) to end_block (not inclusive)
         """
         subnet = self.get_subnet(start_block=start_block,
                                  end_block=end_block)
 
-        return subnet(inputs)
+        return subnet(kwargs)
 
     def __len__(self):
         return len(self.grouped_params)
