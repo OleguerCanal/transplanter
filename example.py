@@ -2,10 +2,11 @@ import logging
 
 from torch.utils.data import DataLoader
 
-# from src.transplanter import Transplanter
+from src.transplanter import Transplanter
 from test_utils.models import Net
 from test_utils.datasets import RandomDataset
-from src.utilities.block_manager import BlockManager
+from src.utilities.block_module import BlockModule
+from src.utilities.logger import log_model_blocks
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -14,11 +15,12 @@ if __name__ == "__main__":
                             batch_size=10,
                             shuffle=True)
     teacher_model = Net(5, 10, 3)
-    student_model = Net(10, 10, 4)
+    student_model = Net(10, 10, 9)
 
-    teacher_block_module = BlockManager(teacher_model)
-    print(teacher_block_module)
-    print(len(teacher_block_module))
+    teacher_block_module = BlockModule(teacher_model)
+    student_block_module = BlockModule(student_model)
+
+    # log_model_blocks(teacher_block_module, student_block_module)
 
     subnet = teacher_block_module.get_subnet(start_block=0,
                                              end_block=2)
@@ -29,7 +31,10 @@ if __name__ == "__main__":
     #     print(var)
 
 
-    # transplanter = Transplanter()
+    transplanter = Transplanter()
+    mapping = transplanter.map_blocks(teacher_block_module, student_block_module)
+    print(mapping)
+    
     # transplanter.transplant(teacher_model=teacher_model,
     #                         student_model=student_model,
     #                         dataloader=dataloader)

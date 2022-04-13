@@ -9,11 +9,13 @@ class LinearBlock(torch.nn.Module):
                  out_features : int) -> None:
         super().__init__()
         self.layer_1 = torch.nn.Linear(in_features, out_features)
+        self.layer_2 = torch.nn.Linear(out_features, out_features)
         self.activation = torch.nn.LeakyReLU(0.01)
 
     def forward(self,
                 x : torch.Tensor) -> torch.Tensor:
-        return self.activation(self.layer_1(x))
+        x = self.activation(self.layer_1(x))
+        return self.activation(self.layer_2(x))
 
 
 class Net(torch.nn.Module):
