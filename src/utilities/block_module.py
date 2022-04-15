@@ -41,7 +41,7 @@ class BlockModule(torch.nn.Module):
     def get_subnet(self,
                    start_block : int,
                    end_block : int):
-        """Get the network from start_bloc to end_block
+        """Get the network from start_bloc (inclusive) to end_block (exclusive)
            TODO(Oleguer): This is suuper limited as for now...maybe use hooks?
         """
         start_block = 0 if start_block is None else start_block
@@ -53,13 +53,19 @@ class BlockModule(torch.nn.Module):
         start_block_index, start_field =\
             self.__get_block_info(self.grouped_params[start_block][0])
         end_block_index, end_field =\
-            self.__get_block_info(self.grouped_params[end_block][0])
+            self.__get_block_info(self.grouped_params[end_block - 1][0])
         
         if start_field != end_field:
             raise NotImplementedError("Can only forward between blocks of the same module_list")
+        if start_field is None:
+            raise NotImplementedError("Can only forward blocks in module_lists")
 
         module_list = getattr(self.model, start_field)
-        return module_list[start_block_index:end_block_index]
+        return module_list[start_block_index:end_block_index + 1]
+
+    # def get_subnet(self, block_ids : list):
+    #     module_list = getattr(self.model, start_field)
+    #     return module_list[block_ids]
 
 
     def forward(self,

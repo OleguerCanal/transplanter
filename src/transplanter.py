@@ -1,7 +1,13 @@
+import logging
+
 import torch
+import torch.optim as optim
+from tqdm import tqdm
 
 from src.utilities.block_extractor import BlockExtractor
+from src.utilities.block_module import BlockModule
 from src.utilities.logger import log_model_blocks
+from src.utilities.freezer import freeze
 
 class Transplanter:
 
@@ -28,8 +34,50 @@ class Transplanter:
             mapping[i] = assigned
         return mapping
 
+    def __forward(self, module_list : torch.nn.ModuleList, x : torch.Tensor) -> tuple:
+        for module in module_list:
+            x = module(x)
+        return x
+
+    def _finetune_block(self,
+                        teacher : torch.nn.Module,
+                        student : torch.nn.Module,
+                        dataloader : torch.utils.data.DataLoader):
+        optimizer = optim.Adam(student.parameters(), lr=0.0001)
+        for _ in range(10):
+            for batch in tqdm(dataloader):
+                inputs, outputs = batch
+                optimizer.zero_grad()
+                teacher_output = self.__forward(teacher, inputs)
+                student_output = self.__forward(student, inputs)
+                loss = self.__loss(student_output, teacher_output)
+                loss.backward()
+                optimizer.step()
+            print(loss)
+
     def transplant(self,
                    teacher_model : torch.nn.Module,
                    student_model : torch.nn.Module,
                    dataloader: torch.utils.data.DataLoader) -> None:
-        pass
+        
+        teacher_model = BlockModule(teacher_model)
+        student_model = BlockModule(student_model)
+
+        # Don't compute gradients on teacher model
+        freeze(teacher_model)
+        block_mapping = self.map_blocks(teacher_model, student_model)
+        for i, assigned in block_mapping.items():
+            logging.info("Finetuning... " + i + " " + assigned)
+            try:
+                teacher_subnet = teacher_model.get_subnet(i, i+1)
+                student_subnet = student_model.get_subnet(assigned[0], assigned[-1] + 1)
+            except NotImplementedError as e:
+                logging.error(e)
+                continue
+            self._finetune_block(
+                teacher=teacher_subnet,
+                student=student_subnet,
+                dataloader=dataloader,
+            )
+        logging.info("Finetuning done.")
+
