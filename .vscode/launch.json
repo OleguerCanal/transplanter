@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Python: Current File",
             "type": "python",
@@ -18,6 +19,16 @@
             "type": "python",
             "request": "launch",
             "program": "example.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+
+        {
+            "name": "Python: Scratch_Training",
+            "type": "python",
+            "request": "launch",
+            "program": "scratch_training.py",
+            "cwd": "${workspaceFolder}/test_utils/",
             "console": "integratedTerminal",
             "justMyCode": true
         }
