@@ -4,10 +4,10 @@ import torch
 import torch.optim as optim
 from tqdm import tqdm
 
-from src.utilities.block_extractor import BlockExtractor
-from src.utilities.block_module import BlockModule
-from src.utilities.logger import log_model_blocks
-from src.utilities.freezer import freeze
+from .utilities.block_extractor import BlockExtractor
+from .utilities.block_module import BlockModule
+from .utilities.logger import log_model_blocks
+from .utilities.freezer import freeze
 
 class Transplanter:
 
@@ -43,31 +43,34 @@ class Transplanter:
                         teacher : torch.nn.Module,
                         student : torch.nn.Module,
                         dataloader : torch.utils.data.DataLoader):
-        optimizer = optim.Adam(student.parameters(), lr=0.0001)
-        for _ in range(10):
-            for batch in tqdm(dataloader):
-                inputs, outputs = batch
+        optimizer = optim.Adam(student.parameters(), lr=1e-4)
+
+        pbar = tqdm(list(range(50)))
+        for _ in pbar:
+            for batch in dataloader:
+                inputs, _ = batch
                 optimizer.zero_grad()
                 teacher_output = self.__forward(teacher, inputs)
                 student_output = self.__forward(student, inputs)
                 loss = self.__loss(student_output, teacher_output)
                 loss.backward()
                 optimizer.step()
-            print(loss)
+            pbar.set_postfix(loss=loss.item())
 
     def transplant(self,
                    teacher_model : torch.nn.Module,
                    student_model : torch.nn.Module,
-                   dataloader: torch.utils.data.DataLoader) -> None:
+                   dataloaders: list) -> None:
         
         teacher_model = BlockModule(teacher_model)
         student_model = BlockModule(student_model)
 
         # Don't compute gradients on teacher model
         freeze(teacher_model)
+        teacher_model.eval()
         block_mapping = self.map_blocks(teacher_model, student_model)
         for i, assigned in block_mapping.items():
-            logging.info("Finetuning... " + i + " " + assigned)
+            logging.info("Finetuning... %i %s"%(i, assigned))
             try:
                 teacher_subnet = teacher_model.get_subnet(i, i+1)
                 student_subnet = student_model.get_subnet(assigned[0], assigned[-1] + 1)
@@ -77,7 +80,11 @@ class Transplanter:
             self._finetune_block(
                 teacher=teacher_subnet,
                 student=student_subnet,
-                dataloader=dataloader,
+                dataloader=dataloaders[i],
             )
         logging.info("Finetuning done.")
 
+# def get_activation(name):
+#     def hook(model, input, output):
+#         activation[name] = output.detach()
+# return hook

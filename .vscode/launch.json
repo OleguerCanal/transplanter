@@ -26,8 +26,8 @@
             "name": "Python: Scratch_Training",
             "type": "python",
             "request": "launch",
-            "program": "scratch_training.py",
-            "cwd": "${workspaceFolder}/test_utils/",
+            "program": "train_cnn.py",
+            "cwd": "${workspaceFolder}/test_models/",
             "console": "integratedTerminal",
             "justMyCode": true
         }
