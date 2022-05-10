@@ -35,5 +35,6 @@ def train(model, model_name="test_1", data_dir="./data"):
     wandb.finish()
 
 if __name__ == "__main__":
-    model = ConvNet(3, hidden_dim=64, out_features=10, n_blocks=3)
-    train(model=model)
+    model = ConvNet(3, hidden_dim=100, out_features=10, n_blocks=3, flattened_size=1600)
+    model_name = "hd_100"
+    train(model=model, model_name=model_name)

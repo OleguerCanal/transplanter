@@ -6,14 +6,14 @@ class LinearBlock(torch.nn.Module):
                  out_features : int) -> None:
         super().__init__()
         self.layer_1 = torch.nn.Linear(in_features, out_features)
-        # self.layer_2 = torch.nn.Linear(out_features, out_features)
+        self.layer_2 = torch.nn.Linear(out_features, out_features)
         self.activation = torch.nn.LeakyReLU(0.01)
+        self.dropout = torch.nn.Dropout(p=0.2)
 
     def forward(self,
                 x : torch.Tensor) -> torch.Tensor:
-        x = self.activation(self.layer_1(x))
-        # return self.activation(self.layer_2(x))
-        return x
+        x = self.dropout(self.activation(self.layer_1(x)))
+        return self.activation(self.layer_2(x))
 
 ## ConvNet
 class ConvBlock(torch.nn.Module):

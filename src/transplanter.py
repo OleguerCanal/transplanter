@@ -8,17 +8,12 @@ from .utilities.block_extractor import BlockExtractor
 from .utilities.block_module import BlockModule
 from .utilities.logger import log_model_blocks
 from .utilities.freezer import freeze
+from .utilities.helpers import InputShapes, RandomInput, slice_tensor, overwrite_tensor, copy_weights, initialize_new_layer
 
 class Transplanter:
 
     def __init__(self) -> None:
         self.block_extractor = BlockExtractor()
-
-    def __loss(self,
-               input : torch.Tensor,
-               target : torch.Tensor) -> torch.Tensor:
-        dist_loss = -(input*target).sum(dim=-1).mean()
-        return dist_loss
 
     def map_blocks(self,
                     teacher_model : torch.nn.Module,
@@ -39,50 +34,93 @@ class Transplanter:
             x = module(x)
         return x
 
+    def __loss(self,
+            guess : torch.Tensor,
+            target : torch.Tensor) -> torch.Tensor:
+        guess = slice_tensor(guess, target.shape)
+        dist_loss = torch.nn.MSELoss()(guess, target)
+        return dist_loss
+
+    def _get_inputs(self,
+                    input_shapes : InputShapes,
+                    batch_size : int) -> tuple:
+        teacher_input = RandomInput(input_shapes.teacher).get_batch(batch_size)
+        student_input = RandomInput(input_shapes.student).get_batch(batch_size)
+        student_input = overwrite_tensor(student_input, teacher_input)
+        return teacher_input, student_input
+
+
     def _finetune_block(self,
                         teacher : torch.nn.Module,
                         student : torch.nn.Module,
-                        dataloader : torch.utils.data.DataLoader):
+                        input_shapes : InputShapes):
         optimizer = optim.Adam(student.parameters(), lr=1e-4)
 
-        pbar = tqdm(list(range(50)))
+        pbar = tqdm(list(range(1000)))
         for _ in pbar:
-            for batch in dataloader:
-                inputs, _ = batch
-                optimizer.zero_grad()
-                teacher_output = self.__forward(teacher, inputs)
-                student_output = self.__forward(student, inputs)
-                loss = self.__loss(student_output, teacher_output)
-                loss.backward()
-                optimizer.step()
+            teacher_input, student_input = self._get_inputs(input_shapes, batch_size=10)
+            optimizer.zero_grad()
+            teacher_output = self.__forward(teacher, teacher_input)
+            student_output = self.__forward(student, student_input)
+            loss = self.__loss(student_output, teacher_output)
+            loss.backward()
+            optimizer.step()
             pbar.set_postfix(loss=loss.item())
 
+    def _adapt_name(self, name : str) -> str:
+        return "model." + name
+
+    def _transfer_weights(self,
+                          teacher_model : BlockModule,
+                          student_model : BlockModule):
+        teacher_state_dict = teacher_model.state_dict()
+        student_state_dict = student_model.state_dict()
+        for t_params, s_params in zip(teacher_model.grouped_params, student_model.grouped_params):
+            if len(t_params) != len(s_params):
+                raise NotImplementedError() 
+            # TODO(oleguer): Match by name and allow different orders
+            for t_param_name, s_param_name in zip(t_params[0:len(s_params)], s_params):
+                s_param = student_state_dict[self._adapt_name(s_param_name)]
+                t_param = teacher_state_dict[self._adapt_name(t_param_name)]
+                student_state_dict[self._adapt_name(s_param_name)] = copy_weights(teacher_weights=t_param,
+                                                                                  student_weights=s_param)
+
+            if len(s_params) > len(t_params):
+                for layer_name in s_params[len(t_params):]:
+                    student_state_dict = initialize_new_layer(layer_name=layer_name,
+                                                              student_state_dict=student_state_dict)
+
+        student_model.load_state_dict(student_state_dict)
+                
     def transplant(self,
                    teacher_model : torch.nn.Module,
                    student_model : torch.nn.Module,
-                   dataloaders: list) -> None:
+                   input_shapes_list: list) -> None:
         
         teacher_model = BlockModule(teacher_model)
         student_model = BlockModule(student_model)
 
+        # self._transfer_weights(teacher_model, student_model)
+
         # Don't compute gradients on teacher model
-        freeze(teacher_model)
-        teacher_model.eval()
+        # freeze(teacher_model)
+        # teacher_model.eval()
         block_mapping = self.map_blocks(teacher_model, student_model)
-        for i, assigned in block_mapping.items():
-            logging.info("Finetuning... %i %s"%(i, assigned))
-            try:
-                teacher_subnet = teacher_model.get_subnet(i, i+1)
-                student_subnet = student_model.get_subnet(assigned[0], assigned[-1] + 1)
-            except NotImplementedError as e:
-                logging.error(e)
-                continue
-            self._finetune_block(
-                teacher=teacher_subnet,
-                student=student_subnet,
-                dataloader=dataloaders[i],
-            )
-        logging.info("Finetuning done.")
+        print(block_mapping)
+        # for i, assigned in block_mapping.items():
+        #     logging.info("Finetuning... %i %s"%(i, assigned))
+        #     try:
+        #         teacher_subnet = teacher_model.get_subnet(i, i+1)
+        #         student_subnet = student_model.get_subnet(assigned[0], assigned[-1] + 1)
+        #     except NotImplementedError as e:
+        #         logging.error(e)
+        #         continue
+        #     self._finetune_block(
+        #         teacher=teacher_subnet,
+        #         student=student_subnet,
+        #         input_shapes=input_shapes_list[i],
+        #     )
+        # logging.info("Finetuning done.")
 
 # def get_activation(name):
 #     def hook(model, input, output):

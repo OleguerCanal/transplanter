@@ -23,6 +23,15 @@
         }
 
         {
+            "name": "Python: CNN Example",
+            "type": "python",
+            "request": "launch",
+            "program": "cnn_example.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+
+        {
             "name": "Python: Scratch_Training",
             "type": "python",
             "request": "launch",

@@ -9,7 +9,7 @@ class BlockModule(torch.nn.Module):
     def __init__(self, model):
         super(BlockModule, self).__init__()
         self.model = model
-        self.grouped_params = self.get_grouped_params()
+        self.grouped_params = self._get_grouped_params()
 
     def __get_block_info(self, param_name : str) -> int:
         param_name_splitted = param_name.split(".")
@@ -20,7 +20,7 @@ class BlockModule(torch.nn.Module):
             field += pn + "."
         return None, None
 
-    def get_grouped_params(self) -> list:
+    def _get_grouped_params(self) -> list:
         """Get list of blocks composing the model
         """
         param_names = [name for name, _ in self.model.named_parameters()]
