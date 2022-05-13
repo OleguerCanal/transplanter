@@ -54,27 +54,45 @@ def initialize_new_layer(layer_name : str, state_dict : dict):
             state_dict[layer_name] = new_conv_bias(state_dict[layer_name])
         else:
             raise Exception("Unknown conv layer type: neither weight nor bias")
-    elif "linear" in layer_name:
+    else:
         if "weight" in layer_name:
             state_dict[layer_name] = new_linear_weight(state_dict[layer_name])
         elif "bias" in layer_name:
             state_dict[layer_name] = new_linear_bias(state_dict[layer_name])
         else:
             raise Exception("Unknown linear layer type: neither weight nor bias")
-    else:
-        raise Exception("Unknown layer type: neither conv nor linear")
     return state_dict
 
+def new_linear_weight(layer_weights : torch.Tensor,
+                      initial_weights_std : float = 0.01):
+    layer_weights = torch.rand_like(layer_weights)*initial_weights_std
+    for i in range(min(layer_weights.shape)):
+        layer_weights[i, i] = 1
+    return layer_weights
 
+def new_linear_bias(layer_bias : torch.Tensor,
+                    initial_weights_std : float = 0.01):
+    return torch.rand_like(layer_bias)*initial_weights_std
 
-def new_linear_weight(layer_weights : torch.Tensor):
-    pass
+def new_conv_weight(layer_weights : torch.Tensor,
+                    initial_weights_std : float = 0.01):
+    layer_weights = torch.rand_like(layer_weights)*initial_weights_std
+    n_filters = layer_weights.shape[0]
+    input_channels = layer_weights.shape[1]
+    for i in range(min(n_filters, input_channels)):
+        layer_weights[i, i, 0, 0] = 1
+    return layer_weights
 
-def new_linear_bias(layer_bias : torch.Tensor):
-    pass
+def new_conv_bias(layer_bias : torch.Tensor,
+                  initial_weights_std : float = 0.01):
+    return torch.rand_like(layer_bias)*initial_weights_std
 
-def new_conv_weight(layer_weights : torch.Tensor):
-    pass
-
-def new_conv_bias(layer_bias : torch.Tensor):
-    pass
+def same_layer_type(layer_1 : str, layer_2 : str):
+    if "conv" in layer_1 and not "conv" in layer_2:
+        return False
+    if not "conv" in layer_1 and "conv" in layer_2:
+        return False
+    if ("weight" in layer_1 and "weight" in layer_2) or\
+        ("bias" in layer_1 and "bias" in layer_2):
+        return True
+    return False
