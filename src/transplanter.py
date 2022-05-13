@@ -8,7 +8,7 @@ from .utilities.block_extractor import BlockExtractor
 from .utilities.block_module import BlockModule
 from .utilities.logger import log_model_blocks
 from .utilities.freezer import freeze
-from .utilities.helpers import InputShapes, RandomInput, slice_tensor, overwrite_tensor, copy_weights, initialize_new_layer
+from .utilities.helpers import InputShapes, RandomInput, slice_tensor, overwrite_tensor, copy_weights, initialize_new_layer, same_layer_type
 
 class Transplanter:
 
@@ -71,24 +71,26 @@ class Transplanter:
         return "model." + name
 
     def _transfer_weights(self,
+                          mapping : dict,
                           teacher_model : BlockModule,
                           student_model : BlockModule):
         teacher_state_dict = teacher_model.state_dict()
         student_state_dict = student_model.state_dict()
-        for t_params, s_params in zip(teacher_model.grouped_params, student_model.grouped_params):
-            if len(t_params) != len(s_params):
-                raise NotImplementedError() 
-            # TODO(oleguer): Match by name and allow different orders
-            for t_param_name, s_param_name in zip(t_params[0:len(s_params)], s_params):
-                s_param = student_state_dict[self._adapt_name(s_param_name)]
-                t_param = teacher_state_dict[self._adapt_name(t_param_name)]
-                student_state_dict[self._adapt_name(s_param_name)] = copy_weights(teacher_weights=t_param,
-                                                                                  student_weights=s_param)
+        for i, assigned in mapping.items():
+            t_params = [self._adapt_name(p) for p in teacher_model.grouped_params[i]]
+            s_params = [self._adapt_name(p) for a in assigned for p in student_model.grouped_params[a]]
+            for t_param_name, s_param_name in zip(t_params, s_params[:len(t_params)]):
+                assert same_layer_type(t_param_name, s_param_name)
+                # NOTE: adapt_name is doing nothing
+                s_param = student_state_dict[s_param_name]
+                t_param = teacher_state_dict[t_param_name]
+                student_state_dict[s_param_name] = copy_weights(teacher_weights=t_param,
+                                                                student_weights=s_param)
 
             if len(s_params) > len(t_params):
                 for layer_name in s_params[len(t_params):]:
                     student_state_dict = initialize_new_layer(layer_name=layer_name,
-                                                              student_state_dict=student_state_dict)
+                                                              state_dict=student_state_dict)
 
         student_model.load_state_dict(student_state_dict)
                 
@@ -100,27 +102,29 @@ class Transplanter:
         teacher_model = BlockModule(teacher_model)
         student_model = BlockModule(student_model)
 
-        # self._transfer_weights(teacher_model, student_model)
 
         # Don't compute gradients on teacher model
         # freeze(teacher_model)
         # teacher_model.eval()
         block_mapping = self.map_blocks(teacher_model, student_model)
-        print(block_mapping)
-        # for i, assigned in block_mapping.items():
-        #     logging.info("Finetuning... %i %s"%(i, assigned))
-        #     try:
-        #         teacher_subnet = teacher_model.get_subnet(i, i+1)
-        #         student_subnet = student_model.get_subnet(assigned[0], assigned[-1] + 1)
-        #     except NotImplementedError as e:
-        #         logging.error(e)
-        #         continue
-        #     self._finetune_block(
-        #         teacher=teacher_subnet,
-        #         student=student_subnet,
-        #         input_shapes=input_shapes_list[i],
-        #     )
-        # logging.info("Finetuning done.")
+        print("block_mapping:", block_mapping)
+
+        self._transfer_weights(block_mapping, teacher_model, student_model)
+
+        for i, assigned in block_mapping.items():
+            logging.info("Finetuning... %i %s"%(i, assigned))
+            try:
+                teacher_subnet = teacher_model.get_subnet(i, i+1)
+                student_subnet = student_model.get_subnet(assigned[0], assigned[-1] + 1)
+            except NotImplementedError as e:
+                logging.error(e)
+                continue
+            self._finetune_block(
+                teacher=teacher_subnet,
+                student=student_subnet,
+                input_shapes=input_shapes_list[i],
+            )
+        logging.info("Finetuning done.")
 
 # def get_activation(name):
 #     def hook(model, input, output):
