@@ -2,7 +2,7 @@ import logging
 from torch.utils.data import DataLoader
 
 from src.transplanter import Transplanter
-from test_models.models import ConvNet
+from test_models.models import SmallConvNet, BigConvNet
 from src.datasets import RandomDataset
 from src.utilities.block_module import BlockModule
 from src.utilities.helpers import InputShapes
@@ -14,27 +14,30 @@ def print_weights(model):
     state_dict = {p[0]: p[1] for p in model.named_parameters()}
     # print(state_dict["hidden_layers.1.conv.weight"].shape)
     # print(state_dict["hidden_layers.1.conv.bias"].shape)
+    for item in state_dict:
+        print(item, state_dict[item].shape)
     
-    print(state_dict["hidden_layers.0.conv.weight"][0])
-    print(state_dict["hidden_layers.0.conv.bias"][0])
+    # print(state_dict["hidden_layers.0.conv.weight"][0])
+    # print(state_dict["hidden_layers.0.conv.bias"][0])
 
 
 if __name__ == "__main__":
     # Intermediate blocks shapes
     input_shapes_list = [
         InputShapes((3, 32, 32), (3, 32, 32)),
-        InputShapes((64, 15, 15), (100, 15, 15)),
-        InputShapes((64, 6, 6), (100, 6, 6)),
-        InputShapes((1024), (1600)),
+        InputShapes((64, 15, 15), (128, 15, 15)),
+        InputShapes((64, 6, 6), (128, 6, 6)),
+        InputShapes((1024), (2048)),
     ]
 
-    teacher_args = {"in_features": 3, "hidden_dim": 64, "out_features": 10, "n_blocks": 3, "flattened_size": 1024}
-    teacher_model = ConvNet.load_from_checkpoint(checkpoint_path="test_models/trained_models/test_1.ckpt", **teacher_args)
-    student_model = ConvNet(3, hidden_dim=100, out_features=10, n_blocks=4, flattened_size=400)
+    teacher_args = {"hidden_dim": 64, "flattened_size": 1024}
+    teacher_model = SmallConvNet.load_from_checkpoint(checkpoint_path="test_models/trained_models/test_1.ckpt", **teacher_args)
+    student_model = BigConvNet(hidden_dim=128,
+                               flattened_size=2048)
 
     print_weights(teacher_model)
     print_weights(student_model)
-
+ 
     teacher_block_module = BlockModule(teacher_model)
     student_block_module = BlockModule(student_model)
 

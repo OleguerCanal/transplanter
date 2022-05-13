@@ -15,7 +15,6 @@ import torchvision.transforms as transforms
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from models import ConvNet
 from data import CIFARDataModule
 
 def train(model, model_name="test_1", data_dir="./data"):
@@ -35,6 +34,8 @@ def train(model, model_name="test_1", data_dir="./data"):
     wandb.finish()
 
 if __name__ == "__main__":
-    model = ConvNet(3, hidden_dim=100, out_features=10, n_blocks=3, flattened_size=1600)
+    from models import SmallConvNet, BigConvNet
+    # model = SmallConvNet(hidden_dim=64, flattened_size=512)
+    model = BigConvNet(hidden_dim=128, flattened_size=512)
     model_name = "hd_100"
     train(model=model, model_name=model_name)

@@ -21,9 +21,10 @@ class ConvBlock(torch.nn.Module):
                  in_channels : int,
                  out_channels : int,
                  kernel_size : int = 3,
+                 padding : int = 0,
                  pool_size : int = None) -> None:
         super().__init__()
-        self.conv = torch.nn.Conv2d(in_channels, out_channels, kernel_size)
+        self.conv = torch.nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding)
         self.pool = None if pool_size is None else torch.nn.MaxPool2d(kernel_size=pool_size)
         self.activation = torch.nn.ReLU()
         self.dropout = torch.nn.Dropout(p=0.2)
