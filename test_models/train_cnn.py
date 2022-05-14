@@ -36,6 +36,6 @@ def train(model, model_name="test_1", data_dir="./data"):
 if __name__ == "__main__":
     from models import SmallConvNet, BigConvNet
     # model = SmallConvNet(hidden_dim=64, flattened_size=512)
-    model = BigConvNet(hidden_dim=128, flattened_size=512)
+    model = BigConvNet(hidden_dim=128, flattened_size=2048)
     model_name = "hd_100"
     train(model=model, model_name=model_name)

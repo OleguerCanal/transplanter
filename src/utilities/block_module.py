@@ -67,7 +67,6 @@ class BlockModule(torch.nn.Module):
     #     module_list = getattr(self.model, start_field)
     #     return module_list[block_ids]
 
-
     def forward(self,
                 start_block : int = None,
                 end_block : int = None,

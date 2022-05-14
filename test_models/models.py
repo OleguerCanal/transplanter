@@ -105,7 +105,7 @@ class BigConvNet(BaseNet):
         modules = [ConvBlock(in_features, hidden_dim, pool_size=2), 
                    ConvBlock(hidden_dim, hidden_dim, padding=1),
                    ConvBlock(hidden_dim, hidden_dim, pool_size=2),
-                   ConvBlock(hidden_dim, hidden_dim),
+                   ConvBlock(hidden_dim, hidden_dim, padding=1),
                    ConvBlock(hidden_dim, hidden_dim),]
         self.hidden_layers = torch.nn.ModuleList(modules = modules)
         self.out_layer_1 = torch.nn.Linear(flattened_size, 250)
